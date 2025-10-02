@@ -1,0 +1,5 @@
+{
+  "name": "LXP Mart 電商管理平台",
+  "description": "一個允許管理員新增、修改和刪除商品資訊的電商網站前端應用。商品資料（包括圖片的 Base64 編碼）都儲存在瀏覽器的 localStorage 中。",
+  "requestFramePermissions": []
+}
