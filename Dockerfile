@@ -23,10 +23,12 @@ FROM node:22
 
 WORKDIR /app
 
-#Copy server files
-COPY --from=builder /app/server .
+# Copy server files
+COPY --from=builder /app/server ./server
 # Copy built frontend assets from the builder stage
 COPY --from=builder /app/dist ./dist
+
+WORKDIR /app/server
 
 EXPOSE 8080
 
