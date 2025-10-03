@@ -12,8 +12,9 @@ RUN npm install
 
 # Install dependencies and build the frontend
 WORKDIR /app
-RUN mkdir dist
-RUN bash -c 'if [ -f package.json ]; then npm install && npm run build; fi'
+RUN npm install
+RUN npm run build
+RUN ls -la dist/
 
 
 # Stage 2: Build the final server image
