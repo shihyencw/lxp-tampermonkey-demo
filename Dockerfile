@@ -18,16 +18,19 @@ RUN ls -la dist/
 
 
 # Stage 2: Build the final server image
-FROM node:22
+FROM node:22-slim
 
 WORKDIR /app
 
-# Copy server files
-COPY --from=builder /app/server ./server
 # Copy built frontend assets from the builder stage
 COPY --from=builder /app/dist ./dist
+# Copy server files (including node_modules)
+COPY --from=builder /app/server ./server
 
 WORKDIR /app/server
+
+# Verify files exist
+RUN ls -la && ls -la ../dist/
 
 EXPOSE 8080
 
