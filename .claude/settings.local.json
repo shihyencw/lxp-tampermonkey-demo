@@ -5,7 +5,10 @@
       "Bash(npm view:*)",
       "Bash(npm run dev:*)",
       "WebSearch",
-      "WebFetch(domain:ai.google.dev)"
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(yes)",
+      "Bash(ls:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []
