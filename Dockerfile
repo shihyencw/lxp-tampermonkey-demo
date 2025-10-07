@@ -3,18 +3,24 @@ FROM node:22 AS builder
 
 WORKDIR /app
 
-# Copy all files from the current directory
+# Copy package files first for better caching
+COPY package*.json ./
+COPY server/package*.json ./server/
+
+# Install dependencies
+RUN npm install
+RUN cd server && npm install
+
+# Copy all source files
 COPY . ./
 
-# Install server dependencies
-WORKDIR /app/server
-RUN npm install
-
-# Install dependencies and build the frontend
-WORKDIR /app
-RUN npm install
+# Build the frontend
 RUN npm run build
-RUN ls -la dist/
+
+# Verify build output
+RUN echo "=== Build completed ===" && \
+    ls -la dist/ && \
+    test -f dist/index.html || (echo "ERROR: index.html not found!" && exit 1)
 
 
 # Stage 2: Build the final server image
@@ -30,7 +36,15 @@ COPY --from=builder /app/server ./server
 WORKDIR /app/server
 
 # Verify files exist
-RUN ls -la && ls -la ../dist/
+RUN echo "=== Verifying deployment files ===" && \
+    ls -la && \
+    ls -la ../dist/ && \
+    test -f ../dist/index.html || (echo "ERROR: index.html missing in production image!" && exit 1)
+
+# Use non-root user for security
+RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
+RUN chown -R nodejs:nodejs /app
+USER nodejs
 
 EXPOSE 8080
 

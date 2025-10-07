@@ -9,6 +9,7 @@ const distPath = path.join(__dirname, '..', 'dist');
 const indexPath = path.join(distPath, 'index.html');
 
 // Log paths for debugging
+console.log('=== Server Starting ===');
 console.log('Current directory:', __dirname);
 console.log('Dist path:', distPath);
 console.log('Index path:', indexPath);
@@ -17,18 +18,31 @@ console.log('Index exists:', fs.existsSync(indexPath));
 
 if (fs.existsSync(distPath)) {
   console.log('Files in dist:', fs.readdirSync(distPath));
+} else {
+  console.error('ERROR: dist directory does not exist!');
 }
+
+// Health check endpoint for Cloud Run
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
 
 // Serve static files from the dist directory (one level up from server/)
 app.use(express.static(distPath));
 
 // Handle SPA routing - return index.html for all routes
 app.get('*', (req, res) => {
-  res.sendFile(indexPath);
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    console.error('ERROR: index.html not found at:', indexPath);
+    res.status(500).send('Server configuration error: index.html not found');
+  }
 });
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${port}`);
+  console.log('Server is ready to accept connections');
 }).on('error', (err) => {
   console.error('Failed to start server:', err);
   process.exit(1);

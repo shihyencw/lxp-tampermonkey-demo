@@ -117,6 +117,35 @@ LXP Mart 是一個基於 React 的電商管理平台,提供商店展示頁面和
    - 暴露 port 8080
    - 啟動 Express 伺服器
 
+### Cloud Run 部署故障排除
+
+如遇到容器啟動失敗的問題,請參考以下步驟:
+
+1. **查看構建日誌**
+   - 確認 `npm run build` 成功執行
+   - 確認 `dist/index.html` 已生成
+
+2. **檢查容器日誌**
+   - 查看 Cloud Run 日誌確認伺服器是否正常啟動
+   - 尋找 "Server is running on port 8080" 訊息
+
+3. **本地測試**
+
+   ```bash
+   # 構建並測試
+   npm run build
+   cd server
+   npm install
+   PORT=8080 node server.js
+   ```
+
+4. **常見問題**
+   - 如果超時,增加 Cloud Run 的 `--timeout` 設定
+   - 確保容器暴露的 PORT 與環境變數一致
+   - 檢查健康檢查端點 `/health` 是否正常回應
+
+詳細的故障排除指南請參考 [DEPLOYMENT.md](./DEPLOYMENT.md)
+
 ## 資安風險評估
 
 ### 高風險項目
