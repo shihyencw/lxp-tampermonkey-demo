@@ -1,0 +1,85 @@
+# Cloud Build 配置檔 - 使用 Dockerfile 構建
+steps:
+  # Step 1: 使用 Dockerfile 構建映像
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+      - '-t'
+      - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest'
+      - '--file=Dockerfile'
+      - '.'
+    id: 'Build Docker Image'
+    timeout: 600s
+
+  # Step 2: 推送映像到 Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+    id: 'Push Image'
+    timeout: 300s
+
+  # Step 3: 推送 latest 標籤
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest'
+    id: 'Push Latest Tag'
+    timeout: 300s
+
+  # Step 4: 部署到 Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    args:
+      - 'run'
+      - 'services'
+      - 'update'
+      - '$_SERVICE_NAME'
+      - '--platform=managed'
+      - '--image=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+      - '--region=$_DEPLOY_REGION'
+      - '--port=8080'
+      - '--timeout=300'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--max-instances=10'
+      - '--min-instances=0'
+      - '--set-env-vars=PORT=8080'
+      - '--allow-unauthenticated'
+      - '--labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID'
+      - '--quiet'
+    id: 'Deploy to Cloud Run'
+    entrypoint: gcloud
+    timeout: 300s
+
+# 指定要推送的映像
+images:
+  - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+  - '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:latest'
+
+# 構建選項
+options:
+  substitutionOption: ALLOW_LOOSE
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'N1_HIGHCPU_8'  # 使用更強大的機器加速構建
+  diskSizeGb: 100
+
+# 替換變數
+substitutions:
+  _TRIGGER_ID: 47d62adc-b7d0-446b-8b22-54981f041bbb
+  _SERVICE_NAME: lxp-tampermonkey-demo
+  _DEPLOY_REGION: asia-east1
+  _AR_HOSTNAME: asia-east1-docker.pkg.dev
+  _AR_REPOSITORY: cloud-run-source-deploy
+  _AR_PROJECT_ID: segian-reptile
+  _PLATFORM: managed
+
+# 標籤
+tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-managed
+  - lxp-tampermonkey-demo
+
+# 超時設定
+timeout: 1800s  # 30 分鐘總超時

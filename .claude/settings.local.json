@@ -9,7 +9,10 @@
       "Bash(yes)",
       "Bash(ls:*)",
       "Bash(npm uninstall:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm run build:*)",
+      "Bash(chmod:*)",
+      "Bash(cd:*)"
     ],
     "deny": [],
     "ask": []

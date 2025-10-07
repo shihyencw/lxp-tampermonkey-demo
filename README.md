@@ -117,32 +117,76 @@ LXP Mart 是一個基於 React 的電商管理平台,提供商店展示頁面和
    - 暴露 port 8080
    - 啟動 Express 伺服器
 
-### Cloud Run 部署故障排除
+### Cloud Run 部署
 
-如遇到容器啟動失敗的問題,請參考以下步驟:
+#### 方法 1: 使用 Cloud Build 配置(CI/CD)
 
-1. **查看構建日誌**
-   - 確認 `npm run build` 成功執行
+專案包含 `cloudbuild.yaml` 配置檔,整合 Cloud Build 觸發器:
+
+```bash
+# 手動觸發 Cloud Build
+gcloud builds submit \
+  --config=cloudbuild.yaml \
+  --project=segian-reptile \
+  --region=asia-east1
+```
+
+**注意**: 如果您之前使用 Buildpacks 部署失敗,請參考 [QUICK_FIX.md](./QUICK_FIX.md)
+
+#### 方法 2: 使用部署腳本
+
+```bash
+./deploy.sh
+```
+
+#### 方法 3: 手動部署
+
+```bash
+gcloud run deploy lxp-tampermonkey-demo \
+  --source . \
+  --region asia-east1 \
+  --platform managed \
+  --allow-unauthenticated \
+  --port 8080 \
+  --timeout 300 \
+  --memory 512Mi \
+  --cpu 1 \
+  --startup-cpu-boost \
+  --project segian-reptile
+```
+
+### 部署故障排除
+
+**常見問題:**
+
+1. **容器啟動失敗**
+   - 檢查 Cloud Build 日誌確認前端構建成功
    - 確認 `dist/index.html` 已生成
+   - 查看 Cloud Run 日誌尋找錯誤訊息
 
-2. **檢查容器日誌**
-   - 查看 Cloud Run 日誌確認伺服器是否正常啟動
-   - 尋找 "Server is running on port 8080" 訊息
+2. **健康檢查失敗**
+   - 容器已配置 `/health` 端點
+   - 確認 PORT 環境變數設定為 8080
+   - 檢查容器是否正確監聽 `0.0.0.0:8080`
 
 3. **本地測試**
 
    ```bash
-   # 構建並測試
+   # 完整測試流程
    npm run build
-   cd server
-   npm install
+   cd server && npm install
    PORT=8080 node server.js
+   # 在另一個終端測試
+   curl http://localhost:8080/health
    ```
 
-4. **常見問題**
-   - 如果超時,增加 Cloud Run 的 `--timeout` 設定
-   - 確保容器暴露的 PORT 與環境變數一致
-   - 檢查健康檢查端點 `/health` 是否正常回應
+**改進項目:**
+- ✅ 增強的錯誤日誌記錄
+- ✅ 多路徑 dist 目錄檢測
+- ✅ `/health` 和 `/ready` 健康檢查端點
+- ✅ 優雅關閉處理 (SIGTERM/SIGINT)
+- ✅ Docker 健康檢查配置
+- ✅ 啟動探針配置 (service.yaml)
 
 詳細的故障排除指南請參考 [DEPLOYMENT.md](./DEPLOYMENT.md)
 

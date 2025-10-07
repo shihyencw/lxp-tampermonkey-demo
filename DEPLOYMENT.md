@@ -118,7 +118,7 @@ USER nodejs
 
 ## Cloud Run 特定配置建議
 
-### 建議的 Cloud Run 設定:
+### 方法 1: 使用 gcloud 直接部署(推薦)
 
 ```bash
 gcloud run deploy lxp-tampermonkey-demo \
@@ -131,7 +131,28 @@ gcloud run deploy lxp-tampermonkey-demo \
   --memory 512Mi \
   --cpu 1 \
   --max-instances 10 \
-  --startup-cpu-boost
+  --min-instances 0 \
+  --startup-cpu-boost \
+  --set-env-vars "PORT=8080" \
+  --project segian-reptile
+```
+
+### 方法 2: 使用 service.yaml 配置檔
+
+專案已包含 `service.yaml` 配置檔,定義了:
+- 啟動和存活探針 (startup/liveness probe) - 使用 `/health` 端點
+- 資源限制 (512Mi 記憶體, 1 CPU)
+- 啟動 CPU 加速
+- 超時設定 (300 秒)
+
+```bash
+# 先構建並推送映像到 GCR
+gcloud builds submit --tag gcr.io/segian-reptile/lxp-mart
+
+# 使用 service.yaml 部署
+gcloud run services replace service.yaml \
+  --region asia-east1 \
+  --project segian-reptile
 ```
 
 ### 健康檢查配置:

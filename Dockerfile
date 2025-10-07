@@ -1,4 +1,4 @@
-# Stage 1: Build the frontend, and install server dependencies
+# Stage 1: Build the frontend and install server dependencies
 FROM node:22 AS builder
 
 WORKDIR /app
@@ -9,7 +9,7 @@ COPY server/package*.json ./server/
 
 # Install dependencies
 RUN npm install
-RUN cd server && npm install
+RUN cd server && npm install --omit=dev
 
 # Copy all source files
 COPY . ./
@@ -23,29 +23,46 @@ RUN echo "=== Build completed ===" && \
     test -f dist/index.html || (echo "ERROR: index.html not found!" && exit 1)
 
 
-# Stage 2: Build the final server image
+# Stage 2: Production runtime image
 FROM node:22-slim
 
+# Create app directory structure
 WORKDIR /app
 
+# Create non-root user (Cloud Run compatible)
+RUN groupadd -r nodejs && \
+    useradd -r -g nodejs nodejs && \
+    mkdir -p /app/dist /app/server && \
+    chown -R nodejs:nodejs /app
+
 # Copy built frontend assets from the builder stage
-COPY --from=builder /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+
 # Copy server files (including node_modules)
-COPY --from=builder /app/server ./server
+COPY --from=builder --chown=nodejs:nodejs /app/server/package*.json ./server/
+COPY --from=builder --chown=nodejs:nodejs /app/server/node_modules ./server/node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/server/server.js ./server/
 
-WORKDIR /app/server
-
-# Verify files exist
+# Verify files exist and are accessible
 RUN echo "=== Verifying deployment files ===" && \
-    ls -la && \
-    ls -la ../dist/ && \
-    test -f ../dist/index.html || (echo "ERROR: index.html missing in production image!" && exit 1)
+    ls -la /app && \
+    ls -la /app/dist/ && \
+    ls -la /app/server/ && \
+    test -f /app/dist/index.html || (echo "ERROR: index.html missing!" && exit 1) && \
+    test -f /app/server/server.js || (echo "ERROR: server.js missing!" && exit 1)
 
-# Use non-root user for security
-RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
-RUN chown -R nodejs:nodejs /app
+# Switch to non-root user
 USER nodejs
 
+# Set working directory to server
+WORKDIR /app/server
+
+# Cloud Run expects the service to listen on PORT environment variable
+# Default to 8080 if PORT is not set
+ENV PORT=8080
+
+# Expose port (documentation only, Cloud Run uses PORT env var)
 EXPOSE 8080
 
+# Start server (no healthcheck in CMD for Cloud Run compatibility)
 CMD ["node", "server.js"]

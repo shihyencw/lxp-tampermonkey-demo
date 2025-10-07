@@ -1,0 +1,17 @@
+{
+  "name": "LXP Mart 電商管理平台",
+  "short_name": "LXP Mart",
+  "description": "電商管理平台 - 商品管理與展示系統",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#3B82F6",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
